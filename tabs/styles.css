@@ -1,0 +1,161 @@
+
+div#proveit {
+	position: fixed;
+	bottom: 0px;
+	right: 20px;
+	z-index: 10000;
+	/*height: 300px;*/
+	width: 800px;
+	background: #fff;
+/*	border: 1px solid #666; 
+	font-size: small !important;
+	opacity: 0.3;
+	filter: alpha(opacity=30); // older IE */
+	}
+
+div#proveit h1 {
+	float: right;
+	width: 50%;
+	text-align: right;
+	font-size: 18px;
+	}
+	div#proveit h1 span {
+		font-weight: normal;
+		}
+	div#proveit h1 button {
+		width: 20px; height: 20px;
+		margin: 0 10px 0 30px;
+		}
+	
+div#tabs-1, div#tabs-2, div#tabs-3 {
+	height: 270px;
+	padding: 10px 5px;
+	}
+.scroll {
+	display: block;
+	overflow: scroll;
+	overflow-y: scroll;
+	overflow-x: hidden;
+	border: 1px solid #dddddd !important;
+	}
+	
+.required {
+	font-weight: bold;
+	color: #FF0084;
+	}				
+
+table {
+	border-collapse: collapse;
+	width: 100%;
+	margin: 0; padding: 0;
+	}
+tr.light td {
+	background-color: #fff;
+	}
+tr.dark td {
+	background-color: #eeeeee;
+	}
+tr.invalid td {
+	color: red;
+	}
+tr.selected td {
+	background-color: #0073EA;
+	color: #fff;
+	}
+tr:hover td {
+	background-color: #FF0084;
+	color: #fff;
+	/*cursor: pointer;*/
+	}	
+td {
+	font-size: 12px;
+	/*border: 1px solid #ccc;*/
+	padding: 0.3em;
+	}
+td.number {
+	vertical-align: middle;
+	font-size: 11px;
+	color: #666;
+	text-align: right;
+	}
+td.author {
+	padding-left: 0.5em;
+	}
+td.year{
+	width: 50px;
+	text-align: center;
+	}
+td.title {
+	width: 525px;
+	}
+td.edit {}
+	td.edit button {
+		width: 20px; height: 20px;
+		}
+td.ibid {
+	display: none;
+	}
+	td.ibid button {
+		width: 20px; height: 20px;
+		}
+
+div.inputs {
+	border: 0;
+	margin: 0; padding: 0 1em 0 0;
+	}
+	div.inputs div.input-row {
+		display: block;
+		margin: 0 0 0.8em 0; padding: 0;
+		}
+	div.inputs div.hidden{
+		display: none;
+		}
+	div.inputs label.paramdesc {
+		display: block;
+		font-size: 12px;
+		text-transform: none;
+		float: left;
+		width: 150px;
+		text-align: left;
+		padding-top:5px;
+		}
+	div.inputs input.paramdesc {
+		/*display: block;*/
+		font-size: 12px;
+		text-transform: none;
+		/*float: left;*/
+		width: 130px;
+		text-align: left;
+		padding-right: 10px;
+		}			
+	div.inputs input.paramvalue {
+		width: 520px;
+		font-size: 12px;
+		}
+	div.inputs select {
+		width: 200px;
+		font-size: 12px;
+		}
+	div.inputs button {
+		width: 20px; height: 20px;
+		}
+
+div#add-buttons, div#edit-buttons {
+	margin-top: 15px;
+	font-size: 11px;
+	}
+
+button.right-side {
+	float: right;
+	}
+
+/* jqueryUI class modifications start here */
+
+span.ui-button-icon-primary {
+	margin: 0; padding: 0;
+	}
+		
+span.ui-button-text {
+		font-size: 11px;
+		margin: 0 3px; padding: 0;
+	}
