@@ -5,6 +5,10 @@
  *
  * Georgia Tech Research Corporation
  *
+ * Copyright 2011 -
+ *
+ * Matthew Flaschen
+ *
  * Atlanta, GA 30332-0415
  *
  * ALL RIGHTS RESERVED
@@ -337,13 +341,23 @@ window.proveit = jQuery.extend({
 	},
 
 	/**
-	 * Returns true if we are on a known domain, and the action is set to edit or submit
+	 * Returns true if the page has an edit box
+	 *
+	 * @return {Boolean} true if the page has an edit box, false otherwise
+	 */
+	isEditPage : function()
+	{
+		return wgAction == 'edit' || wgAction == 'submit';
+	},
+
+	/**
+	 * Returns true if the page is likely to contain references
 	 * @return {Boolean} true if page is supported, false otherwise
 	 */
-	isSupportedEditPage : function()
+	isSupportedPage : function()
 	{
-	        // "Regular" article, userspace, or Wikipedia:Sandbox (exception for testing).  Also, must be edit or preview mode
-	        return (wgCanonicalNamespace == '' || wgCanonicalNamespace == 'User' || wgPageName == 'Wikipedia:Sandbox') && (wgAction == 'edit' || wgAction == 'submit');
+	        // "Regular" article, userspace, or Wikipedia:Sandbox (exception for testing).
+	        return (wgCanonicalNamespace == '' || wgCanonicalNamespace == 'User' || wgPageName == 'Wikipedia:Sandbox');
 	},
 
 	/**
@@ -493,7 +507,13 @@ window.proveit = jQuery.extend({
 	shouldAddSummary : true,
 
 	/**
-	 * Keep ProveIt maximized on load.  If false, it will start minimized.
+	 * ProveIt should be visible on load (rather than requiring toolbar button click) on supported edit pages
+	 * @type Boolean
+	 */
+ 	loadVisible : true,
+
+	/**
+	 * Maximize ProveIt when it first becomes visible.  If false, it will start minimized.  This has no effect on when it becomes visible.
 	 * @type Boolean
 	 */
 	loadMaximized : false,
@@ -514,13 +534,9 @@ window.proveit = jQuery.extend({
 					var summary = thisproveit.getEditSummary();
 
 					if(summary.value.indexOf("ProveIt") == -1)
-					summary.value += " (edited with [[User:ProveIt_GT|ProveIt]])";
-					/*
-					else
 					{
-						this.log("ProveIt already in summary.");
+						summary.value += " (edited with [[User:ProveIt_GT|ProveIt]])";
 					}
-					 */
 				});
 				this.summaryFunctionAdded = true;
 			}
@@ -529,54 +545,71 @@ window.proveit = jQuery.extend({
 				this.log("Failed to add onsubmit handler. e.message: " + e.message);
 			}
 		}
-		/*
-		else
-		{
-			this.log("Not adding to summary.");
-			this.log("this.shouldAddSummary: " + this.shouldAddSummary);
-			this.log("this.prefs.getBoolPref(\"shouldAddSummary\"): " + this.prefs.getBoolPref("shouldAddSummary"));
- 		}
-		 */
 	},
 
-
-	/*
-	 * onload and onunload event handlers tied to the sidebar. These tie the
-	 * event handler into the browser and remove it when finished.
+	/**
+	 * Setup button so users can load ProveIt on demand
 	 */
+	setupButton : function()
+	{
+		var $box = jQuery(this.getMWEditBox());
+
+		// Ensures wikiEditor is loaded
+		$box.bind('wikiEditor-toolbar-buildSection-main', function(event, section)
+		{
+			delete section.groups.insert.tools.reference;
+
+			section.groups.insert.tools.proveit = {
+				label: 'ProveIt',
+				type: 'button',
+				icon: 'http://upload.wikimedia.org/wikipedia/commons/thumb/1/19/ProveIt_logo_for_user_boxes.svg/22px-ProveIt_logo_for_user_boxes.svg.png',
+				action: {
+					type: 'callback',
+					execute: function()
+					{
+						proveit.toggleVisibility();
+					}
+				}
+			};
+		});
+	},
 
 	/**
-	 * Runs to create GUI if we're on a supported edit page
-	 * @return {Boolean} true if GUI was created, false if it already existed, or it's not a supported edit page
+	 * Sets up ProveIt if we're on an edit page.  This includes setting up the toolbar button.  Depending on configuration and the current page, it may also call load to show ProveIt.
 	 */
-	load : function() {
-
-		this.summaryFunctionAdded = false;
-
-		if($('#' + this.GUI_ID).length > 0)
+	setup : function()
+	{
+		if(this.isEditPage())
 		{
-			// GUI already created
-			return false;
-		}
-
-		if(this.isSupportedEditPage())
-		{
-			addOnloadHook(function()
+			if(this.loadVisible && this.isSupportedPage())
 			{
-				var dependencies = ['jquery.ui.tabs', 'jquery.effects.highlight'];
-				mw.loader.using(dependencies, function()
-				{
-					proveit.createGUI();
-				}, function()
-				{
-					proveit.log('Failed to load one of: ' + dependencies);
-				});
-			});
+				this.load();
+			}
 
-			return true;
+			this.setupButton();
 		}
+	},
 
-		return false;
+	/**
+	 * Loads dependencies and creates GUI
+	 */
+	load : function()
+	{
+		addOnloadHook(function()
+		{
+			var dependencies = ['jquery.ui.tabs', 'jquery.effects.highlight'];
+			mw.loader.using(dependencies, function()
+			{
+				proveit.createGUI();
+				if(proveit.loadMaximized)
+				{
+					proveit.toggleViewAddVisibility();
+				}
+			}, function()
+			{
+				proveit.log('Failed to load one of: ' + dependencies);
+			});
+		});
 	},
 
 	/**
@@ -2032,6 +2065,12 @@ window.proveit = jQuery.extend({
 	 */
 	createGUI : function()
 	{
+		if(this.getGUI().length > 0)
+		{
+			// GUI already created
+			return false;
+		}
+
 		importStylesheetURI(this.STATIC_BASE + 'styles.css');
 
 		// more JqueryUI CSS: http://blog.jqueryui.com/2009/06/jquery-ui-172/
@@ -2259,13 +2298,13 @@ window.proveit = jQuery.extend({
 		// handle clicking on tabs
 		jQuery(viewLink).click(function(){
 				if(jQuery(viewTab).is(":hidden"))
-					showHideButton.click(); // We use click so toggle stays in a consistent state.
+					proveit.toggleViewAddVisibility();
 				else
 					cancelEdit();	// Edit and view are the same tab, so we handle this specially.
 			});
 		jQuery(addLink).click(function(){
 				if(jQuery(addTab).is(":hidden"))
-					showHideButton.click();
+					proveit.toggleViewAddVisibility();
 			});
 
 		// add panel buttons
@@ -2337,6 +2376,7 @@ window.proveit = jQuery.extend({
 		});
 
 		var viewAndAdd = jQuery("#view-tab, #add-tab");
+		this.viewAndAddPanes = viewAndAdd;
 
 		function minimize()
 		{
@@ -2356,12 +2396,12 @@ window.proveit = jQuery.extend({
 			minimize
 		);
 
-		this.scanForRefs();
-
-		if(this.loadMaximized)
+		this.toggleViewAddVisibility = function()
 		{
 			showHideButton.click();
-		}
+		};
+
+		this.scanForRefs();
 
 		jQuery("#refs tr").eq(0).click().click(); // select first item in list.  TODO: Why two .click?
 
@@ -2369,6 +2409,71 @@ window.proveit = jQuery.extend({
 		jQuery("#refs tr:even").addClass('light');
 		jQuery("#refs tr:odd").addClass('dark');
 	},
+
+	/**
+	 * A reference to the set containing two items, the view and add tabs.  Will be initialized by createGUI, so it is non-null if ProveIt is visible
+	 *
+	 * @type {jQueryNodeSet}
+	 */
+	viewAndAddPanes : null,
+
+	/*
+	 * Gets jQuery set for ProveIt GUI, which will be empty if ProveIt has not initialized
+	 *
+	 * @return {jQueryNode} root of ProveIt
+	 */
+	getGUI : function()
+	{
+		return jQuery('#' + this.GUI_ID);
+	},
+
+	/**
+	 * Hides ProveIt completely
+	 */
+	hide : function()
+	{
+		this.getGUI().hide();
+	},
+
+	/**
+	 * Show ProveIt
+	 */
+	show : function()
+	{
+		this.createGUI();
+		this.getGUI().show();
+	},
+
+	/**
+	 * Toggle overall visiblility.  If currently hidden, go to minimized.  If minimized, maximize.  If maximize, hide
+	 */
+	toggleVisibility : function()
+	{
+		if(this.getGUI().is(':visible'))
+		{
+			if(this.viewAndAddPanes.is(':visible')) // maximized
+			{
+				this.hide();
+			}
+
+			/*
+			 * If previously maximized, we minimize after hiding, so when we show, it will already be minimized.
+			 * If minimized, we maximize
+			 */
+			this.toggleViewAddVisibility();
+		}
+		else
+		{
+			this.show();
+		}
+	},
+
+	/**
+	 * Toggle visibility of view and add panes.  Initialized by createGUI
+	 *
+	 * @method toggleViewAddVisibility
+	 */
+         toggleViewAddVisibility : null,
 
 	/**
 	 * Generates refbox row and all children, to be used by addNewElement, and when updating
@@ -2788,7 +2893,7 @@ if(!String.prototype.trim)
 proveit.split._compliantExecNpcg = /()??/.exec("")[1] === undefined; // NPCG: nonparticipating capturing group
 proveit.split._nativeSplit = String.prototype.split;
 
-proveit.load();
+proveit.setup();
 
 // Local Variables:
 // js2-basic-offset: 8
